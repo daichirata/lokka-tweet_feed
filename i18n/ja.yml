@@ -1,0 +1,8 @@
+tweet_feed: Tweet Feed
+tweet_feed_token: アクセストークン
+tweet_feed_secret: アクセスシークレット 
+tweet_feed_status: 認証ステータス
+tweet_feed_status_success: 認証済み
+tweet_feed_status_fail:  未認証
+tweet_feed_oauth: 認証する
+tweet_feed_post_message: 投稿メッセージ

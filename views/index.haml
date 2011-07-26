@@ -1,0 +1,23 @@
+%h2 Tweet Feed
+%form{:action => '/admin/plugins/tweet_feed', :method => 'post'}
+  %input{:type => 'hidden', :name => '_method', :value => 'put'}
+  .field
+    %label{:for => 'tweet_feed_post_message'}=t.tweet_feed_post_message
+    %br
+    %input{:type => 'text', :id => 'tweet_feed_post_message', :name => 'tweet_feed_post_message', :value => Option.tweet_feed_post_message}
+    %br
+    Sample: "Wrote new entry" => Wrote new entry: The text is described here! - Site Name http://example.com
+  .field
+    %input{:type => 'submit', :value => t.edit}
+%br
+
+-if Option.tweet_feed_token && Option.tweet_feed_secret
+  %h3=t.tweet_feed_status_success 
+  %h4=t.tweet_feed_token + ": " + Option.tweet_feed_token
+  %h4=t.tweet_feed_secret + ": " + Option.tweet_feed_secret
+-else 
+  %h3=t.tweet_feed_status_fail 
+
+%br
+%a{:href => "/admin/plugins/tweet_feed/request_token"}= "[ " + t.tweet_feed_oauth + " ]"
+
