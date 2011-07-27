@@ -2,6 +2,22 @@
 %form{:action => '/admin/plugins/tweet_feed', :method => 'post'}
   %input{:type => 'hidden', :name => '_method', :value => 'put'}
   .field
+    %label{:for => 'tweet_feed_short_url'}= t.tweet_feed_short_url
+    %br
+    %select{:id => 'tweet_feed_short_url', :name => 'tweet_feed_short_url'}
+      %option{:value => 'tiny', :selected => Option.tweet_feed_short_url == 'tiny'}TinyURL
+      %option{:value => 'bitly', :selected => Option.tweet_feed_short_url == 'bitly'}bitly
+  .field
+    %label{:for => 'tweet_feed_bitly_user_id'}=t.tweet_feed_bitly_user_id + " (#{t.tweet_feed_bitly_option})"
+    %br
+    %input{:type => 'text', :id => 'tweet_feed_bitly_user_id', :name => 'tweet_feed_bitly_user_id', :value => Option.tweet_feed_bitly_user_id}
+    %br
+  .field
+    %label{:for => 'tweet_feed_bitly_api_key'}=t.tweet_feed_bitly_api_key + " (#{t.tweet_feed_bitly_option})"
+    %br
+    %input{:type => 'text', :id => 'tweet_feed_bitly_api_key', :name => 'tweet_feed_bitly_api_key', :value => Option.tweet_feed_bitly_api_key}
+    %br
+  .field
     %label{:for => 'tweet_feed_post_message'}=t.tweet_feed_post_message
     %br
     %input{:type => 'text', :id => 'tweet_feed_post_message', :name => 'tweet_feed_post_message', :value => Option.tweet_feed_post_message}
@@ -11,13 +27,21 @@
     %input{:type => 'submit', :value => t.edit}
 %br
 
+%h3=t.tweet_feed_short_url_status 
+-if Option.tweet_feed_short_url == "bitly"
+  %p bitly
+-else
+  %p TinyURL
+
+%br
+
+%h3=t.tweet_feed_status 
 -if Option.tweet_feed_token && Option.tweet_feed_secret
-  %h3=t.tweet_feed_status_success 
+  %p=t.tweet_feed_status_success 
   %h4=t.tweet_feed_token + ": " + Option.tweet_feed_token
   %h4=t.tweet_feed_secret + ": " + Option.tweet_feed_secret
 -else 
-  %h3=t.tweet_feed_status_fail 
-
-%br
-%a{:href => "/admin/plugins/tweet_feed/request_token"}= "[ " + t.tweet_feed_oauth + " ]"
-
+  %p=t.tweet_feed_status_fail 
+  %br
+  %form{:action => '/admin/plugins/tweet_feed/request_token', :method => 'get'}
+    %input{:type => 'submit', :value => t.tweet_feed_oauth}
