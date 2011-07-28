@@ -115,10 +115,7 @@ module Lokka
 
     def self.bitly_short_url(long_url)
       begin
-        return if !Option.tweet_feed_bitly_user_id && !Option.tweet_feed_bitly_api_key
-        user_id = Option.tweet_feed_bitly_user_id
-        api_key = Option.tweet_feed_bitly_api_key
-
+        user_id, api_key = Option.tweet_feed_bitly_user_id, Option.tweet_feed_bitly_api_key
         query = "version=2.0.1&longUrl=#{long_url}&login=#{user_id}&apiKey=#{api_key}"
         results = JSON.parse(Net::HTTP.get("api.bit.ly", "/shorten?#{query}"))
         results["results"][long_url]["shortUrl"]
