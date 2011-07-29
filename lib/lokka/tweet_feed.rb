@@ -22,7 +22,7 @@ module Lokka
       end
 
       app.get '/admin/plugins/tweet_feed/request_token' do
-        callback_url = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}/admin/plugins/tweet_feed/oauth_callback"
+        callback_url = tweet_feed_url + "/admin/plugins/tweet_feed/oauth_callback"
         request_token = Lokka::TweetFeed.consumer.get_request_token(:oauth_callback => callback_url)
         session[:request_token] = request_token.token
         session[:request_token_secret] = request_token.secret
@@ -57,8 +57,7 @@ module Lokka
         @post.user = current_user
         if @post.save
           flash[:notice] = t.post_was_successfully_created
-          url = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
-          Lokka::TweetFeed.twitter_post(@post, url)
+          Lokka::TweetFeed.when_register(@post, tweet_feed_url) #add_line
           if @post.draft
             redirect '/admin/posts?draft=true'
           else
@@ -74,8 +73,7 @@ module Lokka
         @post = Post.get(id)
         if @post.update(params['post'])
           flash[:notice] = t.post_was_successfully_updated
-          url = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
-          Lokka::TweetFeed.twitter_put(@post, url)
+          Lokka::TweetFeed.when_update(@post, tweet_feed_url) #add_line
           if @post.draft
             redirect '/admin/posts?draft=true'
           else
@@ -89,7 +87,7 @@ module Lokka
 
       app.delete '/admin/posts/:id' do |id|
         post = Post.get(id)
-        Lokka::TweetFeed.reject_id(post.id)
+        Lokka::TweetFeed.reject(post.id) #add_line
         post.destroy
         flash[:notice] = t.post_was_successfully_deleted
         if post.draft
@@ -98,18 +96,57 @@ module Lokka
           redirect '/admin/posts'
         end
       end
+
+      app.helpers do
+        def tweet_feed_url
+          "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
+        end
+      end
     end
 
     def self.consumer
       OAuth::Consumer.new(CONSUMER_KEY, CONSUMER_SECRET, :site => "http://twitter.com")
     end
 
-    def self.twitter_configure
+    def self.configure
       Twitter.configure do |config|
         config.consumer_key = CONSUMER_KEY
         config.consumer_secret = CONSUMER_SECRET
         config.oauth_token = Option.tweet_feed_token
         config.oauth_token_secret = Option.tweet_feed_secret
+      end
+    end
+
+    def self.when_register(post, url)
+      return unless Option.tweet_feed_token && Option.tweet_feed_secret
+      post.reload
+      if post.draft
+        Lokka::TweetFeed.check_draft(post.id)
+      else
+        Lokka::TweetFeed.tweet(post, url)
+      end
+    end
+
+    def self.when_update(post, url)
+      return unless Lokka::TweetFeed.uncontribution?(post.id)
+      unless post.draft
+        Lokka::TweetFeed.tweet(post,url)
+      end
+    end
+
+    def self.tweet(post, long_url)
+      site, url = Site.first, long_url + "/#{post.id}"
+      short_url = Lokka::TweetFeed.short_url(url)
+      Lokka::TweetFeed.configure
+      Twitter.update("#{Option.tweet_feed_post_message}: #{post.title} - #{site.title} #{short_url}")
+      Lokka::TweetFeed.reject(post.id)
+    end
+
+    def self.short_url(long_url)
+      if Option.tweet_feed_short_url == "bitly"
+        Lokka::TweetFeed.bitly_short_url(long_url)
+      else
+        Lokka::TweetFeed.tiny_short_url(long_url)
       end
     end
 
@@ -133,63 +170,31 @@ module Lokka
       end
     end
 
-    def self.short_url(long_url)
-      if Option.tweet_feed_short_url == "bitly"
-        Lokka::TweetFeed.bitly_short_url(long_url)
-      else
-        Lokka::TweetFeed.tiny_short_url(long_url)
-      end
-    end
-
-    def self.twitter_post(post, url)
-      return unless Option.tweet_feed_token && Option.tweet_feed_secret
-      post.reload
-      if post.draft
-        Lokka::TweetFeed.check_draft(post.id)
-      else
-        Lokka::TweetFeed.update(post, url)
-      end
-    end
-
-    def self.twitter_put(post, url)
-      return unless Lokka::TweetFeed.uncontribution?(post.id)
-      unless post.draft
-        Lokka::TweetFeed.update(post,url)
-      end
-    end
-
-    def self.update(post, long_url)
-      site = Site.first
-      url = long_url + "/#{post.id}"
-      short_url = Lokka::TweetFeed.short_url(url)
-      Lokka::TweetFeed.twitter_configure
-      Twitter.update("#{Option.tweet_feed_post_message}: #{post.title} - #{site.title} #{short_url}")
-      Lokka::TweetFeed.reject_id(post.id)
-    end
-
     def self.check_draft(id)
       if Option.tweet_feed_uncontribution 
-        uncont = Lokka::TweetFeed.get_uncontribution_id
-        uncont << id
-        Option.tweet_feed_uncontribution = uncont
+        Option.tweet_feed_uncontribution = Lokka::TweetFeed.uncontribution << id
       else 
         Option.tweet_feed_uncontribution = [id]
       end
     end
 
-    def self.reject_id(id)
-      if Option.tweet_feed_token && Option.tweet_feed_secret && Lokka::TweetFeed.uncontribution?(id)
-        Option.tweet_feed_uncontribution = Lokka::TweetFeed.get_uncontribution_id.reject{|i| i == id}
-      end
+    def self.uncontribution
+      result = Option.tweet_feed_uncontribution 
+      eval(result)
     end
 
     def self.uncontribution?(id)
-      Option.tweet_feed_uncontribution ? Lokka::TweetFeed.get_uncontribution_id.include?(id) : false
+      if Option.tweet_feed_uncontribution
+        Lokka::TweetFeed.uncontribution.include?(id)
+      else
+        false
+      end
     end
 
-    def self.get_uncontribution_id
-      result = Option.tweet_feed_uncontribution 
-      eval(result)
+    def self.reject(id)
+      if Option.tweet_feed_token && Option.tweet_feed_secret && Lokka::TweetFeed.uncontribution?(id)
+        Option.tweet_feed_uncontribution = Lokka::TweetFeed.uncontribution.reject{|i| i == id}
+      end
     end
   end
 end
