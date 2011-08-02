@@ -13,10 +13,9 @@ module Lokka
       end
 
       app.put '/admin/plugins/tweet_feed' do
-        Option.tweet_feed_short_url = params['tweet_feed_short_url']
-        Option.tweet_feed_bitly_user_id = params['tweet_feed_bitly_user_id']
-        Option.tweet_feed_bitly_api_key = params['tweet_feed_bitly_api_key']
-        Option.tweet_feed_post_message = params['tweet_feed_post_message']
+        params.each_pair do |k, v|
+          Option.send("#{k}=", v)
+        end 
         flash[:notice] = 'Updated.'
         redirect '/admin/plugins/tweet_feed'
       end
