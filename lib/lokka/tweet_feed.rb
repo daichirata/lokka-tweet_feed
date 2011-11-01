@@ -15,7 +15,7 @@ module Lokka
       app.put '/admin/plugins/tweet_feed' do
         params.each_pair do |k, v|
           Option.send("#{k}=", v)
-        end 
+        end
         flash[:notice] = 'Updated.'
         redirect '/admin/plugins/tweet_feed'
       end
@@ -51,39 +51,6 @@ module Lokka
         redirect '/admin/plugins/tweet_feed'
       end
 
-      app.post '/admin/posts' do
-        @post = Post.new(params['post'])
-        @post.user = current_user
-        if @post.save
-          flash[:notice] = t.post_was_successfully_created
-          Lokka::TweetFeed.when_register(@post, tweet_feed_url) #add_line
-          if @post.draft
-            redirect '/admin/posts?draft=true'
-          else
-            redirect '/admin/posts'
-          end
-        else
-          @categories = Category.all.map {|c| [c.id, c.title] }.unshift([nil, t.not_select])
-          render_any :'posts/new'
-        end
-      end
-
-      app.put '/admin/posts/:id' do |id|
-        @post = Post.get(id)
-        if @post.update(params['post'])
-          flash[:notice] = t.post_was_successfully_updated
-          Lokka::TweetFeed.when_update(@post, tweet_feed_url) #add_line
-          if @post.draft
-            redirect '/admin/posts?draft=true'
-          else
-            redirect '/admin/posts'
-          end
-        else
-          @categories = Category.all.map {|c| [c.id, c.title] }.unshift([nil, t.not_select])
-          render_any :'posts/edit'
-        end
-      end
-
       app.delete '/admin/posts/:id' do |id|
         post = Post.get(id)
         Lokka::TweetFeed.reject(post.id) #add_line
@@ -99,6 +66,43 @@ module Lokka
       app.helpers do
         def tweet_feed_url
           "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
+        end
+
+        def post_admin_entry(entry_class)
+          name = entry_class.name.downcase
+          entry = entry_class.new(params[name])
+          instance_variable_set("@#{name}", entry)
+          if params['preview']
+            render_preview entry
+          else
+            entry.user = current_user
+            if entry.save
+              Lokka::TweetFeed.when_register(@post, tweet_feed_url) #add_line
+              flash[:notice] = t["#{name}_was_successfully_created"]
+              redirect_after_edit(entry)
+            else
+              @categories = Category.all.map {|c| [c.id, c.title] }.unshift([nil, t.not_select])
+              render_any :"#{name.pluralize}/new"
+            end
+          end
+        end
+
+        def put_admin_entry(entry_class, id)
+          name = entry_class.name.downcase
+          entry = entry_class.get(id)
+          instance_variable_set("@#{name}", entry)
+          if params['preview']
+            render_preview entry_class.new(params[name])
+          else
+            if entry.update(params[name])
+              Lokka::TweetFeed.when_update(@post, tweet_feed_url) #add_line
+              flash[:notice] = t["#{name}_was_successfully_updated"]
+              redirect_after_edit(entry)
+            else
+              @categories = Category.all.map {|c| [c.id, c.title] }.unshift([nil, t.not_select])
+              render_any :"#{name.pluralize}/edit"
+            end
+          end
         end
       end
     end
@@ -170,15 +174,15 @@ module Lokka
     end
 
     def self.check_draft(id)
-      if Option.tweet_feed_uncontribution 
+      if Option.tweet_feed_uncontribution
         Option.tweet_feed_uncontribution = Lokka::TweetFeed.uncontribution << id
-      else 
+      else
         Option.tweet_feed_uncontribution = [id]
       end
     end
 
     def self.uncontribution
-      result = Option.tweet_feed_uncontribution 
+      result = Option.tweet_feed_uncontribution
       eval(result)
     end
 
