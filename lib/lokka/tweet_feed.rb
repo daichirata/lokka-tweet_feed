@@ -4,18 +4,16 @@ require 'json'
 
 module Lokka
   module TweetFeed
-    CONSUMER_KEY = "iBhYRxPYM89O0jjzYOgYEA"
+    CONSUMER_KEY    = "iBhYRxPYM89O0jjzYOgYEA"
     CONSUMER_SECRET = "lxfRU4srZqfP7JEIEkFj8UywCeJuXCOooETF1xtl11g"
 
     def self.registered(app)
       app.get '/admin/plugins/tweet_feed' do
-        haml  :"plugin/lokka-tweet_feed/views/index", :layout => :"admin/layout"
+        haml :"plugin/lokka-tweet_feed/views/index", :layout => :"admin/layout"
       end
 
       app.put '/admin/plugins/tweet_feed' do
-        params.each_pair do |k, v|
-          Option.send("#{k}=", v)
-        end
+        params.each {|k, v| Option.send("#{k}=", v) }
         flash[:notice] = 'Updated.'
         redirect '/admin/plugins/tweet_feed'
       end
@@ -34,6 +32,7 @@ module Lokka
           session[:request_token],
           session[:request_token_secret]
         )
+
         begin
           access_token = request_token.get_access_token(
             {},
@@ -55,7 +54,7 @@ module Lokka
         post = Post.get(id)
         Lokka::TweetFeed.reject(post.id) #add_line
         post.destroy
-        flash[:notice] = t.post_was_successfully_deleted
+        flash[:notice] = t('post_was_successfully_deleted')
         if post.draft
           redirect '/admin/posts?draft=true'
         else
@@ -113,15 +112,15 @@ module Lokka
 
     def self.configure
       Twitter.configure do |config|
-        config.consumer_key = CONSUMER_KEY
-        config.consumer_secret = CONSUMER_SECRET
-        config.oauth_token = Option.tweet_feed_token
+        config.consumer_key       = CONSUMER_KEY
+        config.consumer_secret    = CONSUMER_SECRET
+        config.oauth_token        = Option.tweet_feed_token
         config.oauth_token_secret = Option.tweet_feed_secret
       end
     end
 
     def self.when_register(post, url)
-      return unless Option.tweet_feed_token && Option.tweet_feed_secret
+      return nil unless Option.tweet_feed_token && Option.tweet_feed_secret
       post.reload
       if post.draft
         Lokka::TweetFeed.check_draft(post.id)
@@ -131,7 +130,7 @@ module Lokka
     end
 
     def self.when_update(post, url)
-      return unless Lokka::TweetFeed.uncontribution?(post.id)
+      return nil unless Lokka::TweetFeed.uncontribution?(post.id)
       unless post.draft
         Lokka::TweetFeed.tweet(post,url)
       end
@@ -146,31 +145,30 @@ module Lokka
     end
 
     def self.short_url(long_url)
-      if Option.tweet_feed_short_url == "bitly"
+      case Option.tweet_feed_short_url
+      when  "bitly"
         Lokka::TweetFeed.bitly_short_url(long_url)
-      else
+      when "tiny"
         Lokka::TweetFeed.tiny_short_url(long_url)
-      end
-    end
-
-    def self.bitly_short_url(long_url)
-      begin
-        user_id, api_key = Option.tweet_feed_bitly_user_id, Option.tweet_feed_bitly_api_key
-        query = "version=2.0.1&longUrl=#{long_url}&login=#{user_id}&apiKey=#{api_key}"
-        results = JSON.parse(Net::HTTP.get("api.bit.ly", "/shorten?#{query}"))
-        results["results"][long_url]["shortUrl"]
-      rescue
+      else
         long_url
       end
     end
 
+    def self.bitly_short_url(long_url)
+      user_id, api_key = Option.tweet_feed_bitly_user_id, Option.tweet_feed_bitly_api_key
+      query   = "version=2.0.1&longUrl=#{long_url}&login=#{user_id}&apiKey=#{api_key}"
+      results = JSON.parse(Net::HTTP.get("api.bit.ly", "/shorten?#{query}"))
+      results["results"][long_url]["shortUrl"]
+    rescue
+      long_url
+    end
+
     def self.tiny_short_url(long_url)
-      begin
-        query = "url=#{URI.encode(long_url)}"
-        Net::HTTP.get("tinyurl.com", "/api-create.php?#{query}")
-      rescue
-        return long_url
-      end
+      query = "url=#{URI.encode(long_url)}"
+      Net::HTTP.get("tinyurl.com", "/api-create.php?#{query}")
+    rescue
+      long_url
     end
 
     def self.check_draft(id)

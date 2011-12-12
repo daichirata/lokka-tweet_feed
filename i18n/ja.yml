@@ -1,13 +1,16 @@
-tweet_feed: Tweet Feed
-tweet_feed_token: アクセストークン
-tweet_feed_secret: アクセスシークレット 
-tweet_feed_short_url: 短縮URLサービス
-tweet_feed_short_url_status: 現在選択している短縮URL
-tweet_feed_bitly_option: bitlyを選択した場合に必須
-tweet_feed_bitly_user_id: bitlyのユーザーID
-tweet_feed_bitly_api_key: bitlyのAPI KEY 
-tweet_feed_status: 認証ステータス
-tweet_feed_status_success: 認証済み
-tweet_feed_status_fail:  未認証
-tweet_feed_oauth: 認証する
-tweet_feed_post_message: 投稿メッセージ
+ja:
+  tweet_feed:
+    name: Tweet Feed
+    token: アクセストークン
+    secret: アクセスシークレット
+    not_used: 使用しない
+    short_url: 短縮URLサービス
+    short_url_status: 現在選択している短縮URL
+    bitly_option: bitlyを選択した場合に必須
+    bitly_user_id: bitlyのユーザーID
+    bitly_api_key: bitlyのAPI KEY
+    status: 認証ステータス
+    status_success: 認証済み
+    status_fail:  未認証
+    oauth: 認証する
+    post_message: 投稿メッセージ

@@ -1,47 +1,50 @@
-%h2 Tweet Feed
+%h2= t('tweet_feed.name')
+
 %form{:action => '/admin/plugins/tweet_feed', :method => 'post'}
   %input{:type => 'hidden', :name => '_method', :value => 'put'}
   .field
-    %label{:for => 'tweet_feed_short_url'}= t.tweet_feed_short_url
+    %label{:for => 'tweet_feed_short_url'}= t('tweet_feed.short_url')
     %br
     %select{:id => 'tweet_feed_short_url', :name => 'tweet_feed_short_url'}
-      %option{:value => 'tiny', :selected => Option.tweet_feed_short_url == 'tiny'}TinyURL
+      %option{:value => 'not_used',  :selected => Option.tweet_feed_short_url.nil? }=t('tweet_feed.not_used')
+      %option{:value => 'tiny',  :selected => Option.tweet_feed_short_url == 'tiny'}TinyURL
       %option{:value => 'bitly', :selected => Option.tweet_feed_short_url == 'bitly'}bitly
   .field
-    %label{:for => 'tweet_feed_bitly_user_id'}=t.tweet_feed_bitly_user_id + " (#{t.tweet_feed_bitly_option})"
+    %label{:for => 'tweet_feed_bitly_user_id'}=t('tweet_feed.bitly_user_id') + " (" + t('tweet_feed.bitly_option') + ")"
     %br
     %input{:type => 'text', :id => 'tweet_feed_bitly_user_id', :name => 'tweet_feed_bitly_user_id', :value => Option.tweet_feed_bitly_user_id}
     %br
   .field
-    %label{:for => 'tweet_feed_bitly_api_key'}=t.tweet_feed_bitly_api_key + " (#{t.tweet_feed_bitly_option})"
+    %label{:for => 'tweet_feed_bitly_api_key'}=t('tweet_feed.bitly_api_key') + " (" + t('tweet_feed.bitly_option') +")"
     %br
     %input{:type => 'text', :id => 'tweet_feed_bitly_api_key', :name => 'tweet_feed_bitly_api_key', :value => Option.tweet_feed_bitly_api_key}
     %br
   .field
-    %label{:for => 'tweet_feed_post_message'}=t.tweet_feed_post_message
+    %label{:for => 'tweet_feed_post_message'}=t('tweet_feed.post_message')
     %br
     %input{:type => 'text', :id => 'tweet_feed_post_message', :name => 'tweet_feed_post_message', :value => Option.tweet_feed_post_message}
     %br
-    Sample: "Wrote new entry" => Wrote new entry: The text is described here! - Site Name http://example.com
+    Sample: "Wrote new entry" => "Wrote new entry: The text is described here! - Site Name http://example.com"
   .field
-    %input{:type => 'submit', :value => t.edit}
+    %input{:type => 'submit', :value => t('edit')}
 %br
 
-%h3=t.tweet_feed_short_url_status 
--if Option.tweet_feed_short_url == "bitly"
+%h3=t('tweet_feed.short_url_status')
+-case Option.tweet_feed_short_url
+-when "bitly"
   %p bitly
--else
+-when "tiny"
   %p TinyURL
+-else
+  %p=t('tweet_feed.not_used')
 
 %br
 
-%h3=t.tweet_feed_status 
+%h3=t('tweet_feed.status')
 -if Option.tweet_feed_token && Option.tweet_feed_secret
-  %p=t.tweet_feed_status_success 
-  %h4=t.tweet_feed_token + ": " + Option.tweet_feed_token
-  %h4=t.tweet_feed_secret + ": " + Option.tweet_feed_secret
--else 
-  %p=t.tweet_feed_status_fail 
+  %p=t('tweet_feed.status_success')
+-else
+  %p=t('tweet_feed.status_fail')
   %br
   %form{:action => '/admin/plugins/tweet_feed/request_token', :method => 'get'}
-    %input{:type => 'submit', :value => t.tweet_feed_oauth}
+    %input{:type => 'submit', :value => t('tweet_feed.oauth')}
