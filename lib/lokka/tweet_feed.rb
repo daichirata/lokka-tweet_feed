@@ -21,7 +21,7 @@ module Lokka
       app.get '/admin/plugins/tweet_feed/request_token' do
         callback_url = tweet_feed_url + "/admin/plugins/tweet_feed/oauth_callback"
         request_token = Lokka::TweetFeed.consumer.get_request_token(:oauth_callback => callback_url)
-        session[:request_token] = request_token.token
+        session[:request_token]        = request_token.token
         session[:request_token_secret] = request_token.secret
         redirect request_token.authorize_url
       end
@@ -36,7 +36,7 @@ module Lokka
         begin
           access_token = request_token.get_access_token(
             {},
-            :oauth_token => params[:oauth_token],
+            :oauth_token    => params[:oauth_token],
             :oauth_verifier => params[:oauth_verifier]
           )
         rescue OAuth::Unauthorized
@@ -44,7 +44,7 @@ module Lokka
           redirect '/admin/plugins/tweet_feed'
         end
 
-        Option.tweet_feed_token = access_token.token
+        Option.tweet_feed_token  = access_token.token
         Option.tweet_feed_secret = access_token.secret
 
         redirect '/admin/plugins/tweet_feed'
