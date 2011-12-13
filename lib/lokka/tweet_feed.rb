@@ -50,56 +50,32 @@ module Lokka
         redirect '/admin/plugins/tweet_feed'
       end
 
-      app.delete '/admin/posts/:id' do |id|
-        post = Post.get(id)
-        Lokka::TweetFeed.reject(post.id) #add_line
-        post.destroy
-        flash[:notice] = t('post_was_successfully_deleted')
-        if post.draft
-          redirect '/admin/posts?draft=true'
-        else
-          redirect '/admin/posts'
-        end
-      end
-
       app.helpers do
         def tweet_feed_url
           "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
         end
 
-        def post_admin_entry(entry_class)
-          @name = entry_class.name.downcase
-          @entry = entry_class.new(params[@name])
-          if params['preview']
-            render_preview @entry
-          else
-            @entry.user = current_user
-            if @entry.save
-              Lokka::TweetFeed.when_register(@entry, tweet_feed_url) #add_line
-              flash[:notice] = t("#{@name}_was_successfully_created")
-              redirect_after_edit(@entry)
-            else
-#              @field_names = FieldName.all(:order => :name.asc)
-              @categories = Category.all.map {|c| [c.id, c.title] }.unshift([nil, t('not_select')])
-              render_any :'entries/new'
+        %w|posts posts/* pages pages/*|.each do |suburl|
+          app.after "/admin/#{suburl}" do
+            case @request.env['REQUEST_METHOD']
+            when "POST"
+              Lokka::TweetFeed.when_register(@entry, tweet_feed_url) if @entry.valid?
+            when "PUT"
+              Lokka::TweetFeed.when_update(@entry, tweet_feed_url)   if @entry.valid?
             end
           end
         end
 
-        def put_admin_entry(entry_class, id)
-          @name = entry_class.name.downcase
-          @entry = entry_class.get(id)
-          if params['preview']
-            render_preview entry_class.new(params[@name])
+        def delete_admin_entry(entry_class, id)
+          name = entry_class.name.downcase
+          entry = entry_class.get(id)
+          Lokka::TweetFeed.reject(entry.id) #add_line
+          entry.destroy
+          flash[:notice] = t("#{name}_was_successfully_deleted")
+          if entry.draft
+            redirect "/admin/#{name.pluralize}?draft=true"
           else
-            if @entry.update(params[@name])
-              Lokka::TweetFeed.when_update(@entry, tweet_feed_url) #add_line
-              flash[:notice] = t("#{@name}_was_successfully_updated")
-              redirect_after_edit(@entry)
-            else
-              @categories = Category.all.map {|c| [c.id, c.title] }.unshift([nil, t('not_select')])
-              render_any :'entries/edit'
-            end
+            redirect "/admin/#{name.pluralize}"
           end
         end
       end
