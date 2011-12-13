@@ -119,21 +119,21 @@ module Lokka
         end
       end
 
-      def when_register(post, url)
+      def when_register(entry, url)
         validation Lokka::TweetFeed.auth? do
-          post.reload
-          if post.draft
-            Lokka::TweetFeed.check_draft(post.id)
+          entry.reload
+          if entry.draft
+            Lokka::TweetFeed.check_draft(entry.id)
           else
-            Lokka::TweetFeed.tweet(post, url)
+            Lokka::TweetFeed.tweet(entry, url)
           end
         end
       end
 
-      def when_update(post, url)
-        validation Lokka::TweetFeed.unregistered?(post.id) do
-          unless post.draft
-            Lokka::TweetFeed.tweet(post,url)
+      def when_update(entry, url)
+        validation Lokka::TweetFeed.unregistered?(entry.id) do
+          unless entry.draft
+            Lokka::TweetFeed.tweet(entry, url)
           end
         end
       end
