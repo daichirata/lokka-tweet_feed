@@ -8,6 +8,17 @@ module Lokka
     CONSUMER_SECRET = "lxfRU4srZqfP7JEIEkFj8UywCeJuXCOooETF1xtl11g"
 
     def self.registered(app)
+      %w(posts posts/* pages pages/*).each do |suburl|
+        app.after "/admin/#{suburl}" do
+          case @request.env['REQUEST_METHOD']
+          when "POST"
+            Lokka::TweetFeed.when_register(@entry, tweet_feed_url) if @entry.valid?
+          when "PUT"
+            Lokka::TweetFeed.when_update(@entry, tweet_feed_url) if @entry.valid?
+          end
+        end
+      end
+
       app.get '/admin/plugins/tweet_feed' do
         haml :"plugin/lokka-tweet_feed/views/index", :layout => :"admin/layout"
       end
@@ -53,17 +64,6 @@ module Lokka
       app.helpers do
         def tweet_feed_url
           "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
-        end
-
-        %w|posts posts/* pages pages/*|.each do |suburl|
-          app.after "/admin/#{suburl}" do
-            case @request.env['REQUEST_METHOD']
-            when "POST"
-              Lokka::TweetFeed.when_register(@entry, tweet_feed_url) if @entry.valid?
-            when "PUT"
-              Lokka::TweetFeed.when_update(@entry, tweet_feed_url)   if @entry.valid?
-            end
-          end
         end
 
         def delete_admin_entry(entry_class, id)
@@ -114,12 +114,12 @@ module Lokka
         end
       end
 
-      def tweet(post, long_url)
-        site, url = Site.first, long_url + "/#{post.id}"
-        short_url = Lokka::TweetFeed.short_url(url)
+      def tweet(entry, url)
+        long_url  = url + entry.link
+        short_url = Lokka::TweetFeed.short_url(long_url)
         Lokka::TweetFeed.configure
-        Twitter.update("#{Option.tweet_feed_post_message}: #{post.title} - #{site.title} #{short_url}")
-        Lokka::TweetFeed.reject(post.id)
+        Twitter.update("#{Option.tweet_feed_post_message}: #{entry.title} - #{Site().title} #{short_url}")
+        Lokka::TweetFeed.reject(entry.id)
       end
 
       def short_url(long_url)
