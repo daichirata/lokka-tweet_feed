@@ -8,13 +8,15 @@ module Lokka
     CONSUMER_SECRET = "lxfRU4srZqfP7JEIEkFj8UywCeJuXCOooETF1xtl11g"
 
     def self.registered(app)
-      %w(posts posts/* pages pages/*).each do |suburl|
-        app.after "/admin/#{suburl}" do
-          case @request.env['REQUEST_METHOD']
+      %w(posts posts/* pages pages/*).each do |sub_url|
+        app.after "/admin/#{sub_url}" do
+          return unless @entry.valid? && @entry.body !~ /<!-- *not *feed *-->/i
+
+          case request.request_method
           when "POST"
-            Lokka::TweetFeed.when_register(@entry, tweet_feed_url) if @entry.valid?
+            Lokka::TweetFeed.when_register(@entry, tweet_feed_url)
           when "PUT"
-            Lokka::TweetFeed.when_update(@entry, tweet_feed_url) if @entry.valid?
+            Lokka::TweetFeed.when_update(@entry, tweet_feed_url)
           end
         end
       end
