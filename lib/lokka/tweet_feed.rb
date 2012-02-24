@@ -10,6 +10,7 @@ module Lokka
     def self.registered(app)
       %w(posts posts/* pages pages/*).each do |sub_url|
         app.after "/admin/#{sub_url}" do
+
           if @entry.valid? && @entry.body !~ /<!-- *not *feed *-->/i
             case request.request_method
             when "POST"
