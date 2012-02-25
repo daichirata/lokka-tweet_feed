@@ -10,12 +10,12 @@ module Lokka
     def self.registered(app)
       %w(posts posts/* pages pages/*).each do |sub_url|
         app.after "/admin/#{sub_url}" do
-          if !params["preview"] && @entry.valid? && @entry.body !~ /<!-- *not *feed *-->/i
+          if @entry && @entry.body !~ /<!-- *not *feed *-->/i && !params["preview"]
             case request.request_method
             when "POST"
-              Lokka::TweetFeed.when_register(@entry, tweet_feed_url)
+              Lokka::TweetFeed.when_register(@entry, tweet_feed_url) if flash[:notice]
             when "PUT"
-              Lokka::TweetFeed.when_update(@entry, tweet_feed_url)
+              Lokka::TweetFeed.when_update(@entry, tweet_feed_url) if flash[:notice]
             end
           end
         end
