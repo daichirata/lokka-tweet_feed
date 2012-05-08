@@ -63,6 +63,13 @@ module Lokka
         redirect '/admin/plugins/tweet_feed'
       end
 
+      app.get '/admin/plugins/tweet_feed/oauth_reset' do
+        Option.first(:name => 'tweet_feed_token').destroy
+        Option.first(:name => 'tweet_feed_secret').destroy
+
+        redirect '/admin/plugins/tweet_feed'
+      end
+
       app.helpers do
         def tweet_feed_url
           "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
