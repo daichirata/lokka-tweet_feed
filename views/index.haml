@@ -43,6 +43,8 @@
 %h3=t('tweet_feed.status')
 -if Option.tweet_feed_token && Option.tweet_feed_secret
   %p=t('tweet_feed.status_success')
+  %form{:action => '/admin/plugins/tweet_feed/oauth_reset', :method => 'get'}
+    %input{:type => 'submit', :value => t('tweet_feed.oauth_reset')}
 -else
   %p=t('tweet_feed.status_fail')
   %br

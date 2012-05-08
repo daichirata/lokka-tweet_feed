@@ -13,4 +13,5 @@ ja:
     status_success: 認証済み
     status_fail:  未認証
     oauth: 認証する
+    oauth_reset: 認証を解除する
     post_message: 投稿メッセージ
